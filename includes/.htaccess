@@ -1,0 +1,2 @@
+# SkyCast includes - deny direct HTTP access (PHP require_once is unaffected)
+Require all denied
