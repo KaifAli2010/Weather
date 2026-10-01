@@ -1,0 +1,18 @@
+# SkyCast — Apache configuration (works with XAMPP defaults).
+Options -Indexes
+DirectoryIndex index.html
+
+<IfModule mod_headers.c>
+    # Long-lived caching for static assets.
+    <FilesMatch "\.(css|js|svg|png|jpg|jpeg|webp|gif|ico|woff2?)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+    # Never cache HTML pages or API responses.
+    <FilesMatch "\.(html|php)$">
+        Header set Cache-Control "no-store, must-revalidate"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/plain application/javascript application/json image/svg+xml
+</IfModule>

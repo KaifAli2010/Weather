@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SkyCast — live weather forecasts with a 5-day outlook, city search and beautiful dashboard.">
+    <meta name="theme-color" content="#0b1e3a">
+    <title>SkyCast · Live Weather Forecast</title>
+
+    <!-- Social sharing -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="SkyCast · Live Weather Forecast">
+    <meta property="og:description" content="Live weather forecasts with a 5-day outlook, city search and a beautiful dashboard.">
+    <meta property="og:image" content="assets/images/og-image.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="SkyCast · Live Weather Forecast">
+    <meta name="twitter:description" content="Live weather forecasts with a 5-day outlook, city search and a beautiful dashboard.">
+    <meta name="twitter:image" content="assets/images/og-image.jpg">
+
+    <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          crossorigin="anonymous" referrerpolicy="no-referrer">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"
+          crossorigin="anonymous" referrerpolicy="no-referrer">
+    <!-- App styles -->
+    <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- ── Animated sky background ─────────────────────────────────────── -->
+<div class="sky-bg" aria-hidden="true">
+    <canvas id="sky-canvas"></canvas>
+    <div class="sky-glow sky-glow-1"></div>
+    <div class="sky-glow sky-glow-2"></div>
+</div>
+
+<!-- ── Header ──────────────────────────────────────────────────────── -->
+<header class="site-header">
+    <div class="container-lg">
+        <nav class="navbar-brand-bar">
+            <a class="brand" href="./" aria-label="SkyCast home">
+                <span class="brand-logo" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="url(#brandSun)"/>
+                        <path d="M7 18a4.5 4.5 0 0 1-.4-8.98A5.5 5.5 0 0 1 17.3 9.6 4 4 0 0 1 16.5 18H7z" fill="#fff"/>
+                        <defs><linearGradient id="brandSun" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#ffd94d"/><stop offset="1" stop-color="#ff9e2c"/>
+                        </linearGradient></defs></svg>
+                </span>
+                <span class="brand-text">Sky<em>Cast</em></span>
+            </a>
+
+            <div class="header-actions">
+                <button id="unit-toggle" class="btn btn-ghost" type="button"
+                        aria-label="Switch temperature unit" title="Switch °C / °F">
+                    <span class="unit-label">°C</span><span class="unit-sep">/</span><span class="unit-label-alt">°F</span>
+                </button>
+                <button id="theme-toggle" class="btn btn-ghost" type="button"
+                        aria-label="Toggle dark mode" aria-pressed="true" title="Toggle dark / light mode">
+                    <i class="bi bi-moon-stars theme-icon-dark" aria-hidden="true"></i>
+                    <i class="bi bi-sun theme-icon-light" aria-hidden="true"></i>
+                </button>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<main class="container-lg main-content" id="main-content">
+
+    <!-- ── Search bar ──────────────────────────────────────────────── -->
+    <section class="search-section" aria-label="City search">
+        <div class="search-shell">
+            <div class="search-bar glass">
+                <i class="bi bi-geo-alt search-pin" aria-hidden="true"></i>
+                <input id="city-input" class="search-input" type="text"
+                       placeholder="Search any city — Karachi, London, Dubai…"
+                       autocomplete="off" spellcheck="false"
+                       role="combobox" aria-expanded="false" aria-autocomplete="list"
+                       aria-controls="suggestions" aria-label="City name">
+                <button id="clear-input" class="btn-clear" type="button" aria-label="Clear search"
+                        hidden><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                <button id="geo-btn" class="btn btn-geo" type="button" aria-label="Use my current location"
+                        title="Use my current location">
+                    <i class="bi bi-crosshair" aria-hidden="true"></i>
+                </button>
+                <button id="search-btn" class="btn btn-search" type="button">
+                    <span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+                    <span class="search-btn-text"><i class="bi bi-search" aria-hidden="true"></i> <span class="search-label">Search</span></span>
+                </button>
+            </div>
+
+            <!-- Search suggestions dropdown -->
+            <div id="suggestions" class="suggestions glass" role="listbox" aria-label="City suggestions" hidden></div>
+        </div>
+
+        <!-- Quick city chips -->
+        <div class="quick-cities" aria-label="Popular cities">
+            <span class="quick-label">Popular:</span>
+            <button class="chip" type="button" data-city="Karachi">Karachi</button>
+            <button class="chip" type="button" data-city="Lahore">Lahore</button>
+            <button class="chip" type="button" data-city="Islamabad">Islamabad</button>
+            <button class="chip" type="button" data-city="Dubai">Dubai</button>
+            <button class="chip" type="button" data-city="London">London</button>
+            <button class="chip" type="button" data-city="New York">New York</button>
+        </div>
+    </section>
+
+    <!-- ── Alert / error banner ────────────────────────────────────── -->
+    <div id="alert-banner" class="alert-banner glass" role="alert" aria-live="assertive" hidden>
+        <i class="bi alert-icon" aria-hidden="true"></i>
+        <div class="alert-body">
+            <strong class="alert-title"></strong>
+            <p class="alert-message"></p>
+        </div>
+        <button class="btn-close-custom" type="button" aria-label="Dismiss message">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+    </div>
+
+    <!-- ── Dashboard ───────────────────────────────────────────────── -->
+    <section id="dashboard" aria-label="Weather dashboard">
+
+        <!-- Current weather hero card -->
+        <div class="card hero-card glass" id="hero-card">
+            <div class="card-body hero-body">
+
+                <div class="hero-main">
+                    <div class="hero-left">
+                        <div class="hero-location d-flex align-items-center gap-2">
+                            <h1 class="hero-city" id="hero-city">—</h1>
+                            <button id="fav-btn" class="fav-btn" type="button"
+                                    aria-label="Add to favourites" aria-pressed="false" title="Add to favourites">
+                                <i class="bi bi-star" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <p class="hero-country" id="hero-country">&nbsp;</p>
+                        <div class="hero-temp-row">
+                            <span class="hero-icon" id="hero-icon" aria-hidden="true"></span>
+                            <span class="hero-temp"><span id="hero-temp">--</span><span class="hero-unit">°</span></span>
+                        </div>
+                        <p class="hero-desc"><span id="hero-desc">Loading…</span></p>
+                        <p class="hero-feels">Feels like <span id="hero-feels">--°</span></p>
+                    </div>
+
+                    <div class="hero-right">
+                        <div class="hero-date" id="hero-date">—</div>
+                        <div class="hero-time" id="hero-time" aria-live="off">--:--</div>
+                        <div class="hero-updated">
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                            Updated <span id="hero-updated">—</span>
+                        </div>
+                        <button id="refresh-btn" class="btn btn-refresh" type="button">
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Detail tiles -->
+                <div class="hero-details" id="hero-details">
+                    <!-- filled by app.js -->
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Sun / day progress card -->
+        <div class="card sun-card glass" id="sun-card">
+            <div class="card-body">
+                <h2 class="section-title"><i class="bi bi-sunrise" aria-hidden="true"></i> Sun &amp; Daylight</h2>
+                <div class="sun-row">
+                    <div class="sun-item">
+                        <span class="sun-label">Sunrise</span>
+                        <span class="sun-value" id="sunrise-time">--:--</span>
+                    </div>
+                    <div class="sun-track" aria-hidden="true">
+                        <div class="sun-progress" id="sun-progress">
+                            <span class="sun-knob"></span>
+                        </div>
+                    </div>
+                    <div class="sun-item text-end">
+                        <span class="sun-label">Sunset</span>
+                        <span class="sun-value" id="sunset-time">--:--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5-day forecast -->
+        <div class="forecast-section">
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                <h2 class="section-title mb-0"><i class="bi bi-calendar3" aria-hidden="true"></i> 5-Day Forecast</h2>
+                <span class="section-sub" id="forecast-provider">—</span>
+            </div>
+            <div class="forecast-grid" id="forecast-grid">
+                <!-- filled by app.js -->
+            </div>
+        </div>
+
+    </section>
+
+    <!-- ── History / favourites row ────────────────────────────────── -->
+    <section class="bottom-rows" aria-label="Your cities">
+        <div class="bottom-card glass">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h2 class="section-title mb-0"><i class="bi bi-star-fill" aria-hidden="true"></i> Favourites</h2>
+                <button id="fav-clear" class="btn btn-mini" type="button" hidden>Clear all</button>
+            </div>
+            <div class="chip-row" id="fav-list">
+                <span class="empty-hint">No favourites yet — tap the star next to a city name.</span>
+            </div>
+        </div>
+
+        <div class="bottom-card glass">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h2 class="section-title mb-0"><i class="bi bi-clock-history" aria-hidden="true"></i> Recent Searches</h2>
+                <button id="recent-clear" class="btn btn-mini" type="button" hidden>Clear all</button>
+            </div>
+            <div class="chip-row" id="recent-list">
+                <span class="empty-hint">Your recent searches will appear here.</span>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <p>Weather data by <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>
+           &amp; <a href="https://openweathermap.org" target="_blank" rel="noopener">OpenWeatherMap</a>
+           · Built with PHP &amp; Bootstrap 5</p>
+    </footer>
+</main>
+
+<!-- ── Toast ───────────────────────────────────────────────────────── -->
+<div id="toast" class="toast-box glass" role="status" aria-live="polite" hidden>
+    <i class="bi toast-icon" aria-hidden="true"></i><span class="toast-text"></span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
